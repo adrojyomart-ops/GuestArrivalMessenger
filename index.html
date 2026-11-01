@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel Ravi Palace | Arrival Guest WhatsApp Messenger</title>
+<style>
+:root{--green:#123f32;--green2:#17634c;--gold:#d8ad5b;--bg:#f4f7f5;--ink:#1c2923;--muted:#65756c;--line:#dce6df;--red:#a92e26}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:14px/1.5 Arial,sans-serif;color:var(--ink)}
+header{background:linear-gradient(110deg,#103b2e,#1c674e);color:#fff;padding:22px max(18px,calc((100% - 1200px)/2))}
+header h1{margin:0;font-size:24px}header p{margin:5px 0 0;color:#deeee6}
+main{max-width:1200px;margin:22px auto;padding:0 16px 40px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px;margin-bottom:16px;box-shadow:0 2px 8px #173d2b0a}
+h2{font-size:18px;margin:0 0 12px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button,.filelabel{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;background:var(--green);color:#fff}
+button.secondary{background:#e8f1ec;color:var(--green)}button.gold{background:var(--gold);color:#2a210f}button:disabled{opacity:.45;cursor:not-allowed}
+.filelabel input{display:none}.hint,.status{font-size:12px;color:var(--muted)}
+input[type=search],input[type=text],select{padding:10px;border:1px solid #cbd8cf;border-radius:8px;background:#fff;min-width:170px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:#f4f8f5;border:1px solid var(--line);border-radius:11px;padding:12px}.stat b{display:block;font-size:23px;color:var(--green)}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:850px}th,td{text-align:left;padding:10px 9px;border-bottom:1px solid var(--line);vertical-align:top}th{background:#eff5f1;color:#214b39;position:sticky;top:0}
+.tag{display:inline-block;border-radius:20px;padding:3px 8px;background:#e7f4ec;color:#17613e;font-size:11px;font-weight:bold}.tag.bad{background:#fdebea;color:#a52a22}
+#preview{white-space:pre-wrap;background:#f7faf8;border:1px solid var(--line);padding:14px;border-radius:9px;max-height:460px;overflow:auto}
+.notice{padding:11px 13px;border-radius:9px;background:#fff8e8;border:1px solid #f0dfb4;color:#654b16}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
+@media(max-width:650px){.stats{grid-template-columns:repeat(2,1fr)}header h1{font-size:20px}.row .grow{flex:1 1 100%}}
+</style>
+</head>
+<body>
+<header><h1>HOTEL RAVI PALACE</h1><p>eZee PMS · Arrival Guest WhatsApp Messenger</p></header>
+<main>
+<section class="card">
+<h2>1. Import eZee arrival list</h2>
+<div class="row">
+<label class="filelabel">Choose arrival CSV <input id="csvFile" type="file" accept=".csv,text/csv"></label>
+<button class="secondary" id="sampleBtn">View mapped columns</button>
+<button class="secondary" id="exportBtn" disabled>Export guest list CSV</button>
+</div>
+<p class="hint">Upload the eZee Arrival List CSV. The app uses guest name, arrival/departure date, room details, phone, reservation number, Pax, reservation type, status and Business Source, channel or Travel Agent where available (zero/blank placeholders are ignored).</p>
+<div id="importMsg" class="status">No arrival report imported yet.</div>
+</section>
+<section class="card">
+<h2>2. Arrival overview</h2>
+<div class="stats">
+<div class="stat"><b id="total">0</b>Unique guest messages</div>
+<div class="stat"><b id="eligible">0</b>Ready for WhatsApp</div>
+<div class="stat"><b id="missing">0</b>Missing / invalid phone</div>
+<div class="stat"><b id="sent">0</b>Marked as sent today</div>
+</div>
+<p class="hint">Rows belonging to the same reservation (including eZee room suffixes such as (1), (2), (3)) are merged into one guest message. Individual room numbers are never shown; only total rooms and category-wise counts are displayed. If a number is missing or incorrect, enter it in the Mobile number box in that guest's row and click Save. Only future/today arrival reservations with an active booking status are included.</p>
+</section>
+<section class="card">
+<h2>3. Select arrival guests</h2>
+<div class="row" style="margin-bottom:12px">
+<input type="search" class="grow" id="search" placeholder="Search guest, room, mobile or reservation">
+<select id="dateFilter"><option value="all">All arrival dates</option></select>
+<select id="statusFilter"><option value="all">All included statuses</option></select>
+<button class="secondary" id="selectVisible">Select visible</button>
+<button class="secondary" id="clearSelect">Clear selection</button>
+</div>
+<div class="tablewrap"><table><thead><tr><th><input type="checkbox" id="selectAll"></th><th>Guest</th><th>Room Categories / Counts</th><th>Arrival</th><th>Departure</th><th>WhatsApp</th><th>Reservation(s)</th><th>Send state</th></tr></thead><tbody id="guestRows"><tr><td colspan="8" class="status">Import a CSV to display arrival guests.</td></tr></tbody></table></div>
+<div class="row" style="margin-top:14px">
+<button id="startQueue" disabled>▶ Open selected WhatsApp chats</button>
+<button class="secondary" id="nextBtn" disabled>Open next guest</button>
+<button class="gold" id="markSent" disabled>Mark current as sent</button>
+<span id="queueStatus" class="status">Select guests to begin.</span>
+</div>
+<p class="hint">WhatsApp opens one chat at a time with the personalised message prefilled. Review it and press Send in WhatsApp, then return here and mark it as sent.</p>
+</section>
+<section class="card">
+<h2>4. Personalised message preview</h2>
+<div id="preview">Select a guest to preview the arrival message.</div>
+<div class="row" style="margin-top:10px">
+<button class="secondary" id="copyMsg" disabled>Copy message</button>
+<button class="secondary" id="openCurrent" disabled>Open current guest in WhatsApp</button>
+</div>
+</section>
+<section class="card">
+<div class="notice"><b>WhatsApp sending note:</b> This tool prepares click-to-chat messages; it does not silently send messages. A staff member must review and press Send in WhatsApp. Fully automated sending requires an approved WhatsApp Business Platform integration and appropriate guest consent.</div>
+<p class="hint">Guest details and sent-state history stay in this browser. Keep arrival sheets and guest phone numbers private and use them only for guest-service communication.</p>
+</section>
+<footer>Hotel Ravi Palace, Agra · Travel Desk: +91 74096 49313</footer>
+</main>
+<script>
+let guests=[],visible=[],selectedIds=[],currentId=null,queue=[],queueIndex=0;
+const $=id=>document.getElementById(id);
+const today=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())};
+const dateKey=()=>{const d=today();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const sentKey=g=>`hrp_arrival_sent_${dateKey()}_${g.id}`;
+const isSent=g=>localStorage.getItem(sentKey(g))==='1';
+function parseCSV(t){t=String(t||'').replace(/^\uFEFF/,'');const first=(t.split(/\r?\n/,1)[0]||'');const candidates=[',',';','\t'];const delim=candidates.sort((a,b)=>first.split(b).length-first.split(a).length)[0];const rows=[];let row=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];if(c==='"'){if(q&&t[i+1]==='"'){f+='"';i++}else q=!q}else if(c===delim&&!q){row.push(f);f=''}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);if(row.some(x=>String(x).trim()))rows.push(row);row=[];f=''}else f+=c}row.push(f);if(row.some(x=>String(x).trim()))rows.push(row);return rows}
+function normPhone(v){let n=String(v||'').replace(/\D/g,'');if(n.length===10)n='91'+n;if(n.length===11&&n[0]==='0')n='91'+n.slice(1);return /^\d{11,15}$/.test(n)?n:''}
+function parseDate(v){if(!v)return null;const s=String(v).trim();let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);m=s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);const d=new Date(s);return isNaN(d)?null:d}
+function dateText(v){const d=parseDate(v);return d?d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):String(v||'Not specified')}
+function colMap(headers){const h=headers.map(x=>x.trim().replace(/^\uFEFF/,'').toLowerCase());const find=(...names)=>{for(const n of names){let i=h.indexOf(n.toLowerCase());if(i>=0)return i}return -1};return {res:find('res no.','res no','reservation id','reservation no.','reservation no'),bookingId:find('booking id','booking id no.','booking id no','booking no.','booking no','booking number'),arrival:find('arrival date'),departure:find('depature date','departure date'),name:find('guest name'),room:find('room details'),phone:find('phone no.','phone no','phone number'),pax:find('pax'),type:find('res. type','res type'),status:find('status'),channel:find('channel'),agent:find('travel agent'),source:find('business source')}}
+const cell=(r,i)=>i>=0?String(r[i]||'').trim():'';
+function activeStatus(s){return !/cancel|no show|checked.?out|void/i.test(s)}
+function parsePax(value){const s=String(value||'');const adult=s.match(/(\d+)\s*\(\s*A\s*\)/i);const child=s.match(/(\d+)\s*\(\s*C\s*\)/i);if(adult||child)return {adults:adult?Number(adult[1]):0,children:child?Number(child[1]):0,valid:true};const nums=s.match(/\d+/g);if(nums&&nums.length===1)return {adults:Number(nums[0]),children:0,valid:true};return {adults:0,children:0,valid:false}}
+function guestSummary(g){if(g.guestCountValid)return `${g.adults} Adults / ${g.children} Children (Total ${g.adults+g.children})`;return g.paxRaw||'As per reservation'}
+function roomSummary(g){const counts=new Map();(g.rooms||[]).forEach(raw=>{const category=String(raw||'').trim().replace(/^\s*\d+\s*[-–:|]\s*/,'').trim()||'Room category not specified';counts.set(category,(counts.get(category)||0)+1)});const total=[...counts.values()].reduce((a,b)=>a+b,0);return {total,details:[...counts.entries()].map(([name,count])=>`${name} × ${count}`).join(', ')||'As per reservation'}}
+function buildMessage(g){const roomInfo=roomSummary(g);const pax=guestSummary(g);const bookingSource=(g.bookingSources||[]).join(', ')||'Not specified';return `*Welcome to Hotel Ravi Palace, Agra!*\n\nDear ${g.name},\n\nGreetings from *Hotel Ravi Palace, Agra*!\n\nWe are delighted to welcome you and look forward to making your stay comfortable and memorable.\n\n*Your Reservation Details*\n${g.bookingIds&&g.bookingIds.length?'Booking ID: '+g.bookingIds.join(', '):'Reservation ID: '+(g.reservations.join(', ')||'As per booking')}\nGuest Name: ${g.name}\nTotal Rooms: ${roomInfo.total||'As per reservation'}\nRoom Categories: ${roomInfo.details}\nGuests: ${pax}\nBooking Source: ${bookingSource}\nArrival: ${dateText(g.arrival)}\nDeparture: ${dateText(g.departure)}\n\n*Important Notes:*\n1. Please share your estimated arrival time with us, if not already provided.\n2. Please carry a valid government-issued photo ID for all guests at the time of check-in.\n3. Check-in and check-out will be subject to hotel policies.\n\n*TRAVEL DESK – COMPLETE TRAVEL ASSISTANCE*\n\n• Airport / Railway Station Pickup & Drop\n• Agra Sightseeing – Taj Mahal, Agra Fort & more\n• Mathura & Vrindavan Sightseeing\n• Delhi & Jaipur Sightseeing\n• Private Cars / Tempo Traveller\n• Customized sightseeing & transportation\n\nIf you would like to arrange pickup, drop or sightseeing, simply reply *TRAVEL* and our Travel Desk will share the available options and best package price.\n\nTravel Desk: +91 74096 49313\n\n*Hotel Ravi Palace, Agra*\nThank you! We look forward to welcoming you.`}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function importRows(rows){if(rows.length<2)throw Error('No guest rows found in this CSV.');const m=colMap(rows[0]);const req=['name','arrival'];const missing=req.filter(k=>m[k]<0);if(missing.length)throw Error('Required columns missing: '+missing.join(', '));const grouped=new Map();let excluded=0;
+rows.slice(1).forEach(r=>{const status=cell(r,m.status)||'Confirmed';if(!activeStatus(status)){excluded++;return}const arrival=cell(r,m.arrival);const ad=parseDate(arrival);if(ad&&new Date(ad.getFullYear(),ad.getMonth(),ad.getDate())<today()){excluded++;return}
+const name=cell(r,m.name)||'Guest',raw=cell(r,m.phone),phone=normPhone(raw),res=cell(r,m.res),bookingId=cell(r,m.bookingId),room=cell(r,m.room);
+const baseRes=res.replace(/\s*\(\d+\)\s*$/,'').trim();
+const baseBookingId=bookingId.replace(/\s*\(\d+\)\s*$/,'').trim();
+const bookingKey=baseBookingId?(baseBookingId+'|'+name.toLowerCase()+'|'+arrival+'|'+cell(r,m.departure)):(baseRes?(baseRes+'|'+name.toLowerCase()+'|'+arrival+'|'+cell(r,m.departure)):(phone||('guest|'+name.toLowerCase()+'|'+arrival+'|'+cell(r,m.departure))));
+const key=bookingKey;
+if(!grouped.has(key))grouped.set(key,{id:key,name,phone,phoneRaw:raw,rooms:[],reservations:[],bookingIds:[],arrival,departure:cell(r,m.departure),paxRaw:'',adults:0,children:0,guestCountValid:false,statuses:[],bookingSources:[],eligible:!!phone});
+const g=grouped.get(key);const validSource=v=>{const x=String(v||'').trim();return x&&!/^(0|0\.0+|na|n\/a|null|undefined|-)$/i.test(x)?x:''};const bookingSource=validSource(cell(r,m.source))||validSource(cell(r,m.channel))||validSource(cell(r,m.agent));if(bookingSource&&!g.bookingSources.includes(bookingSource))g.bookingSources.push(bookingSource);if(room&&!g.rooms.includes(room))g.rooms.push(room);if(res&&!g.reservations.includes(res))g.reservations.push(res);if(bookingId&&!g.bookingIds.includes(bookingId))g.bookingIds.push(bookingId);if(!g.statuses.includes(status))g.statuses.push(status);if(!g.phoneRaw)g.phoneRaw=raw;if(!g.arrival)g.arrival=arrival;if(!g.departure)g.departure=cell(r,m.departure);const paxPart=parsePax(cell(r,m.pax));if(paxPart.valid){g.adults+=paxPart.adults;g.children+=paxPart.children;g.guestCountValid=true}else if(!g.paxRaw&&cell(r,m.pax))g.paxRaw=cell(r,m.pax);});
+guests=[...grouped.values()];guests.sort((a,b)=>(parseDate(a.arrival)||new Date(0))-(parseDate(b.arrival)||new Date(0)));populateFilters();render();$('importMsg').textContent=`Imported ${rows.length-1} rows. ${guests.length} unique guest messages included; ${excluded} cancelled, past or inactive rows excluded.`;$('exportBtn').disabled=!guests.length}
+function populateFilters(){const dates=[...new Set(guests.map(g=>dateText(g.arrival)))];$('dateFilter').innerHTML='<option value="all">All arrival dates</option>'+dates.map(d=>`<option>${esc(d)}</option>`).join('');const sts=[...new Set(guests.flatMap(g=>g.statuses))];$('statusFilter').innerHTML='<option value="all">All included statuses</option>'+sts.map(s=>`<option>${esc(s)}</option>`).join('')}
+function render(){const q=$('search').value.toLowerCase(),df=$('dateFilter').value,sf=$('statusFilter').value;visible=guests.filter(g=>(df==='all'||dateText(g.arrival)===df)&&(sf==='all'||g.statuses.includes(sf))&&[g.name,g.rooms.join(' '),g.phoneRaw,g.reservations.join(' '),(g.bookingSources||[]).join(' ')].join(' ').toLowerCase().includes(q));$('guestRows').innerHTML=visible.length?visible.map(g=>`<tr><td><input type="checkbox" class="pick" data-id="${esc(g.id)}" ${selectedIds.includes(g.id)?'checked':''} ${!g.eligible?'disabled':''}></td><td><b>${esc(g.name)}</b><br><span class="hint">${esc((g.bookingSources||[]).join(', ')||'Booking source not specified')}</span></td><td>${esc(g.rooms.join(', ')||'Not specified')}</td><td>${esc(dateText(g.arrival))}</td><td>${esc(dateText(g.departure))}</td><td>
+${esc(g.phoneRaw||'Not provided')}<br><span class="hint">${g.phone?'+'+g.phone:'Missing / invalid'}</span>
+<div class="row" style="gap:5px;margin-top:7px;flex-wrap:nowrap">
+<input type="text" class="manualPhone" data-id="${esc(g.id)}" value="${esc(g.phoneRaw||'')}" placeholder="Enter mobile no." inputmode="tel" style="min-width:145px;width:145px;padding:7px">
+<button type="button" class="secondary savePhone" data-id="${esc(g.id)}" style="padding:7px 9px">Save</button>
+</div>
+</td><td>${esc(g.reservations.join(', '))}</td><td>${isSent(g)?'<span class="tag">Sent today</span>':g.eligible?'<span class="status">Pending</span>':'<span class="tag bad">Cannot send</span>'}</td></tr>`).join(''):'<tr><td colspan="8" class="status">No matching arrival guests.</td></tr>';
+$('total').textContent=guests.length;$('eligible').textContent=guests.filter(g=>g.eligible&&!isSent(g)).length;$('missing').textContent=guests.filter(g=>!g.eligible).length;$('sent').textContent=guests.filter(isSent).length;$('startQueue').disabled=!selectedIds.some(id=>{const g=guests.find(x=>x.id===id);return g&&g.eligible&&!isSent(g)});$('selectAll').checked=visible.length>0&&visible.filter(g=>g.eligible&&!isSent(g)).every(g=>selectedIds.includes(g.id))}
+function preview(g){currentId=g?.id||null;$('preview').textContent=g?buildMessage(g):'Select a guest to preview the arrival message.';$('copyMsg').disabled=!g;$('openCurrent').disabled=!g||!g.phone}
+function openGuest(g){if(!g)return;preview(g);window.open('https://wa.me/'+g.phone+'?text='+encodeURIComponent(buildMessage(g)),'_blank','noopener');$('queueStatus').textContent='WhatsApp opened for '+g.name+'. Send there, then mark as sent.';$('markSent').disabled=false;$('openCurrent').disabled=false}
+$('csvFile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;$('importMsg').textContent='Reading '+f.name+'…';const reader=new FileReader();reader.onload=()=>{try{const rows=parseCSV(reader.result);if(!rows.length)throw Error('The selected file is empty or could not be read.');importRows(rows);selectedIds=[];queue=[];preview(null)}catch(err){$('importMsg').textContent='Import error: '+err.message+' Please select the original eZee Arrival List CSV.'}finally{e.target.value=''}};reader.onerror=()=>{$('importMsg').textContent='Could not read this file. Please save the eZee sheet as CSV UTF-8 and try again.';e.target.value=''};reader.readAsText(f,'UTF-8')});
+$('guestRows').addEventListener('click',e=>{
+const btn=e.target.closest('.savePhone');if(!btn)return;
+const id=btn.dataset.id,g=guests.find(x=>x.id===id);if(!g)return;
+const field=$('guestRows').querySelector('.manualPhone[data-id="'+CSS.escape(id)+'"]');
+const raw=(field?.value||'').trim(),phone=normPhone(raw);
+if(!phone){alert('Please enter a valid mobile number: 10-digit Indian number or number with country code.');field?.focus();return}
+g.phoneRaw=raw;g.phone=phone;g.eligible=true;
+render();
+if(currentId===id)preview(g);
+$('queueStatus').textContent='Mobile number saved for '+g.name+'. You can now select this guest and open WhatsApp.';
+});
+$('guestRows').addEventListener('change',e=>{if(!e.target.classList.contains('pick'))return;const id=e.target.dataset.id;if(e.target.checked){if(!selectedIds.includes(id))selectedIds.push(id)}else selectedIds=selectedIds.filter(x=>x!==id);const g=guests.find(x=>x.id===id);preview(g);render()});
+$('selectAll').onchange=e=>{visible.filter(g=>g.eligible&&!isSent(g)).forEach(g=>{if(e.target.checked){if(!selectedIds.includes(g.id))selectedIds.push(g.id)}else selectedIds=selectedIds.filter(x=>x!==g.id)});render()};
+$('selectVisible').onclick=()=>{visible.filter(g=>g.eligible&&!isSent(g)).forEach(g=>{if(!selectedIds.includes(g.id))selectedIds.push(g.id)});render()};
+$('clearSelect').onclick=()=>{selectedIds=[];queue=[];render();preview(null);$('queueStatus').textContent='Selection cleared.'};
+$('search').oninput=render;$('dateFilter').onchange=render;$('statusFilter').onchange=render;
+$('startQueue').onclick=()=>{queue=selectedIds.filter(id=>{const g=guests.find(x=>x.id===id);return g&&g.eligible&&!isSent(g)});queueIndex=0;if(queue.length){openGuest(guests.find(g=>g.id===queue[0]));$('nextBtn').disabled=false}};
+$('nextBtn').onclick=()=>{queue=queue.filter(id=>{const g=guests.find(x=>x.id===id);return g&&g.eligible&&!isSent(g)});if(!queue.length){$('queueStatus').textContent='No pending selected guests.';return}queueIndex=0;openGuest(guests.find(g=>g.id===queue[0]))};
+$('markSent').onclick=()=>{if(!currentId)return;const g=guests.find(x=>x.id===currentId);if(!g)return;localStorage.setItem(sentKey(g),'1');selectedIds=selectedIds.filter(x=>x!==g.id);queue=queue.filter(x=>x!==g.id);$('markSent').disabled=true;render();const next=queue.map(id=>guests.find(x=>x.id===id)).find(Boolean);if(next){$('queueStatus').textContent='Marked '+g.name+' as sent. Opening next guest.';openGuest(next)}else{$('queueStatus').textContent='Marked '+g.name+' as sent. Queue complete.';preview(null)}};
+$('copyMsg').onclick=async()=>{const g=guests.find(x=>x.id===currentId);if(!g)return;try{await navigator.clipboard.writeText(buildMessage(g));$('queueStatus').textContent='Message copied.'}catch(e){$('queueStatus').textContent='Clipboard permission unavailable; copy from preview.'}};
+$('openCurrent').onclick=()=>{const g=guests.find(x=>x.id===currentId);if(g)openGuest(g)};
+$('exportBtn').onclick=()=>{const head=['Guest Name','Room Categories / Counts','Arrival','Departure','Phone','Status','Booking / Reservation ID','Booking Source'];const data=[head,...guests.map(g=>[g.name,roomSummary(g).details,g.arrival,g.departure,g.phoneRaw,g.statuses.join('; '),(g.bookingIds&&g.bookingIds.length?'Booking ID: '+g.bookingIds.join('; '):'Reservation ID: '+g.reservations.join('; ')),(g.bookingSources||[]).join('; ')])];const csv=data.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='Hotel_Ravi_Palace_Arrival_Guests.csv';a.click();URL.revokeObjectURL(a.href)};
+$('sampleBtn').onclick=()=>alert('Important columns mapped: Guest Name, Arrival Date, Depature Date, Room Details, Phone no., Res No., Pax, Status, Res. Type, channel, Travel Agent and Business Source. Cancelled / inactive and past-arrival rows are excluded. You can manually enter or correct a guest mobile number in the guest list and click Save before opening WhatsApp.');
+</script>
+</body></html>
